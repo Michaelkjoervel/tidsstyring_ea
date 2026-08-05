@@ -12,8 +12,8 @@
  */
 window.EA_CONFIG = {
   APP_NAME: 'erwin andersen tidsregistrering',
-  SUPABASE_URL: '',
-  SUPABASE_ANON_KEY: ''
+  SUPABASE_URL: 'https://fumsgtpqdoscloybodfw.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_dJ7swCStjCyIck0pr1SmBQ_g3zWdN4g'
 };
 
 // Cloud-mode er aktiv når begge nøgler er udfyldt.
