@@ -1,18 +1,15 @@
-# Udgiver appen til GitHub Pages ved hvert push.
-# 'enablement: true' aktiverer Pages automatisk første gang.
+# Udgiver appen til GitHub Pages: hvert push til main spejles til
+# gh-pages-branchen, som Pages serverer fra (Deploy from a branch).
 name: Udgiv til GitHub Pages
 
 on:
   push:
     branches:
       - main
-      - claude/erwin-andersen-timetracking-wu5x4c
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -21,20 +18,14 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Hent koden
         uses: actions/checkout@v4
-      - name: Konfigurér Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Pak sitet
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - name: Udgiv
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Udgiv til gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          touch .nojekyll
+          git add .nojekyll
+          git commit -m "Udgivelse til GitHub Pages"
+          git push origin HEAD:gh-pages --force
