@@ -15,6 +15,12 @@ window.Seed = (function () {
 
   function ts(nDaysAgo) { return daysAgoISO(nDaysAgo) + 'T09:00:00.000Z'; }
 
+  /* dd.mm.åååå — samme format som appens fmtDato bruger i log-tekster. */
+  function dkDato(nDaysAgo) {
+    var iso = daysAgoISO(nDaysAgo);
+    return iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4);
+  }
+
   function demoData() {
     var users = [
       { id: 'u-mkj', initialer: 'MKJ', navn: 'MKJ', email: 'mkj@eandersen.dk', rolle: 'Marketing', app_rolle: 'admin', aktiv: true, created_at: ts(365) },
@@ -25,24 +31,24 @@ window.Seed = (function () {
     ];
 
     // [id, titel, virksomhed, opgavetype, fase, status, partner, konsulent,
-    //  honorar, startdage, ansatdage|null, aarsag|null, favorit, beskrivelse]
+    //  honorar, startdage, ansatdage|null, aarsag|null, favorit, beskrivelse, sidstAendretDage]
     var rDefs = [
       ['r-01', 'Supply Chain Manager', 'Havnholm Logistik A/S', 'Fuld rekruttering', 'Afslutningsfase', 'Afsluttet', 'u-efa', 'u-lbs', 300000, 120, null, null, false,
-        'Genbesættelse efter internt jobskifte. Lukket uden placering — kunden satte processen i bero.'],
+        'Genbesættelse efter internt jobskifte. Lukket uden placering — kunden satte processen i bero.', 68],
       ['r-02', 'Marketingchef', 'Bøgelund Fødevarer A/S', 'Fuld rekruttering', 'Afslutningsfase', 'Besat', 'u-hrn', 'u-bdl', 350000, 100, 25, null, true,
-        'Ny marketingchef til voksende fødevarevirksomhed. Fokus på digital profil.'],
+        'Ny marketingchef til voksende fødevarevirksomhed. Fokus på digital profil.', 25],
       ['r-03', 'HR Business Partner', 'Danske Maskinfabrikker A/S', 'Fuld rekruttering', 'Afslutningsfase', 'Besat', 'u-efa', 'u-bdl', 320000, 80, 10, null, false,
-        'HRBP til produktionsvirksomhed med 400 medarbejdere.'],
+        'HRBP til produktionsvirksomhed med 400 medarbejdere.', 10],
       ['r-04', 'Økonomichef', 'Grønvang Byg ApS', 'Fuld rekruttering', 'Afslutningsfase', 'Aktiv', 'u-efa', 'u-lbs', 380000, 60, null, null, false,
-        'Økonomichef med erfaring fra bygge- og anlægsbranchen. Reference-tjek i gang.'],
+        'Økonomichef med erfaring fra bygge- og anlægsbranchen. Reference-tjek i gang.', 8],
       ['r-05', 'IT-projektleder', 'Nordkyst Consulting', 'Searchopgave', 'Rekrutteringsfase', 'Annulleret', 'u-hrn', 'u-lbs', 180000, 50, null, 'Kunden besatte stillingen internt.', false,
-        'Search efter senior IT-projektleder til ERP-udrulning.'],
-      ['r-06', 'CFO rekruttering', 'Novatek A/S', 'Fuld rekruttering', 'Rekrutteringsfase', 'Aktiv', 'u-hrn', 'u-bdl', 480000, 45, null, null, true,
-        'CFO til techvirksomhed i vækst. Kandidatpræsentation planlagt.'],
+        'Search efter senior IT-projektleder til ERP-udrulning.', 35],
+      ['r-06', 'CFO-rekruttering', 'Novatek A/S', 'Fuld rekruttering', 'Rekrutteringsfase', 'Aktiv', 'u-hrn', 'u-bdl', 480000, 45, null, null, true,
+        'CFO til techvirksomhed i vækst. Kandidatpræsentation planlagt.', 35],
       ['r-07', 'Salgsdirektør', 'Fjordlys Pharma ApS', 'Searchopgave', 'Rekrutteringsfase', 'På pause', 'u-hrn', 'u-lbs', 250000, 30, null, null, false,
-        'Search efter salgsdirektør med pharma-erfaring. Afventer kundens organisationsændring.'],
+        'Search efter salgsdirektør med pharma-erfaring. Afventer kundens organisationsændring.', 21],
       ['r-08', 'Financial Controller', 'Vestjysk Energi A/S', 'Searchopgave', 'Opstartsfase', 'Aktiv', 'u-efa', 'u-bdl', null, 7, null, null, false,
-        'Kortlægning af kandidatmarkedet er netop startet.']
+        'Kortlægning af kandidatmarkedet er netop startet.', 7]
     ];
 
     var counters = {}; // fortløbende nummer pr. år
@@ -71,7 +77,7 @@ window.Seed = (function () {
         favorit: d[12],
         oprettet_af: d[6],
         created_at: ts(d[9]),
-        updated_at: ts(Math.max(0, d[9] - 5))
+        updated_at: ts(d[14] !== undefined ? d[14] : d[9])
       };
     });
 
@@ -145,11 +151,11 @@ window.Seed = (function () {
       ['r-02', 'u-hrn', 'oprettet', 'Rekrutteringen blev oprettet', 100],
       ['r-02', 'u-hrn', 'fase_aendret', 'Fase ændret fra "Opstartsfase" til "Rekrutteringsfase"', 90],
       ['r-02', 'u-hrn', 'fase_aendret', 'Fase ændret fra "Rekrutteringsfase" til "Afslutningsfase"', 35],
-      ['r-02', 'u-hrn', 'besat', 'Rekrutteringen blev markeret som besat (ansættelsesdato ' + daysAgoISO(25) + ')', 25],
+      ['r-02', 'u-hrn', 'besat', 'Rekrutteringen blev markeret som besat (ansættelsesdato ' + dkDato(25) + ')', 25],
       ['r-03', 'u-efa', 'oprettet', 'Rekrutteringen blev oprettet', 80],
       ['r-03', 'u-efa', 'fase_aendret', 'Fase ændret fra "Opstartsfase" til "Rekrutteringsfase"', 70],
       ['r-03', 'u-efa', 'fase_aendret', 'Fase ændret fra "Rekrutteringsfase" til "Afslutningsfase"', 20],
-      ['r-03', 'u-efa', 'besat', 'Rekrutteringen blev markeret som besat (ansættelsesdato ' + daysAgoISO(10) + ')', 10],
+      ['r-03', 'u-efa', 'besat', 'Rekrutteringen blev markeret som besat (ansættelsesdato ' + dkDato(10) + ')', 10],
       ['r-04', 'u-efa', 'oprettet', 'Rekrutteringen blev oprettet', 60],
       ['r-04', 'u-efa', 'fase_aendret', 'Fase ændret fra "Opstartsfase" til "Rekrutteringsfase"', 50],
       ['r-04', 'u-efa', 'fase_aendret', 'Fase ændret fra "Rekrutteringsfase" til "Afslutningsfase"', 8],

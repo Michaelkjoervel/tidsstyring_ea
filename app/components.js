@@ -143,7 +143,10 @@ window.Modal = (function () {
     root.querySelector('[data-modal-backdrop]').addEventListener('mousedown', function (e) {
       if (e.target === e.currentTarget) close();
     });
-    var first = form.querySelector('input, select, textarea');
+    // Flyt fokus ind i modalen — ellers rammer Enter knappen bag backdroppen.
+    var first = form.querySelector('input, select, textarea') ||
+      form.querySelector('button[type=submit]') ||
+      root.querySelector('[data-modal-close]');
     if (first) first.focus();
   }
 
@@ -268,8 +271,16 @@ window.selectOptions = function (values, selected, emptyLabel) {
 };
 
 window.userOptions = function (selected, emptyLabel) {
-  var opts = DB.activeUsers().map(function (u) {
-    return { value: u.id, label: DB.userLabel(u.id) };
+  var users = DB.activeUsers();
+  // Behold en nedlagt bruger der allerede er valgt — ellers nulstilles
+  // feltet lydløst når formularen gemmes igen.
+  var valgt = selected ? DB.userById(selected) : null;
+  if (valgt && users.indexOf(valgt) === -1) users = users.concat([valgt]);
+  var opts = users.map(function (u) {
+    return {
+      value: u.id,
+      label: DB.userLabel(u.id) + (u.aktiv === false ? ' (nedlagt)' : '')
+    };
   });
   return selectOptions(opts, selected, emptyLabel);
 };

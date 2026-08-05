@@ -12,7 +12,7 @@ window.Views = (function () {
       inner =
         '<form id="login-form" class="login-form" novalidate>' +
           '<label class="field"><span>Email</span>' +
-            '<input type="email" name="email" autocomplete="email" required placeholder="dit navn@eandersen.dk"></label>' +
+            '<input type="email" name="email" autocomplete="email" required placeholder="navn@eandersen.dk"></label>' +
           '<label class="field"><span>Adgangskode</span>' +
             '<input type="password" name="password" autocomplete="current-password" required placeholder="••••••••"></label>' +
           '<button type="submit" class="btn btn-primary btn-block">Log ind</button>' +
@@ -166,6 +166,7 @@ window.Views = (function () {
       rekrutteringspartner: '', rekrutteringskonsulent: '',
       fase: 'Opstartsfase', honorar: null, startdato: DB.todayISO(), noter: ''
     };
+    var faseLaast = !isNew && DB.LUKKEDE_STATUSSER.indexOf(r.status) !== -1;
     return '<div class="page-head">' +
         '<h1>' + (isNew ? 'Opret rekruttering' : 'Redigér ' + esc(r.rekrutteringsnummer)) + '</h1>' +
       '</div>' +
@@ -176,7 +177,7 @@ window.Views = (function () {
           : '<input type="hidden" name="id" value="' + escAttr(r.id) + '">') +
         '<div class="form-grid">' +
           '<label class="field span-2"><span>Titel <em>*</em></span>' +
-            '<input type="text" name="titel" value="' + escAttr(r.titel) + '" placeholder="fx CFO rekruttering"></label>' +
+            '<input type="text" name="titel" value="' + escAttr(r.titel) + '" placeholder="fx CFO-rekruttering"></label>' +
           '<label class="field"><span>Virksomhedsnavn <em>*</em></span>' +
             '<input type="text" name="virksomhedsnavn" value="' + escAttr(r.virksomhedsnavn) + '" placeholder="Kundevirksomheden"></label>' +
           '<label class="field"><span>Opgavetype <em>*</em></span>' +
@@ -186,7 +187,8 @@ window.Views = (function () {
           '<label class="field"><span>Rekrutteringskonsulent</span>' +
             '<select name="rekrutteringskonsulent">' + userOptions(r.rekrutteringskonsulent, 'Vælg konsulent…') + '</select></label>' +
           '<label class="field"><span>Fase</span>' +
-            '<select name="fase">' + selectOptions(DB.FASER, r.fase) + '</select></label>' +
+            '<select name="fase"' + (faseLaast ? ' disabled title="Rekrutteringen er lukket (' + escAttr(r.status) + ') — genoptag for at ændre fase"' : '') + '>' +
+            selectOptions(DB.FASER, r.fase) + '</select></label>' +
           '<label class="field"><span>Startdato <em>*</em></span>' +
             '<input type="date" name="startdato" value="' + escAttr(r.startdato) + '" max="' + escAttr(DB.todayISO()) + '"></label>' +
           '<label class="field"><span>Estimeret honorar (kr.)</span>' +

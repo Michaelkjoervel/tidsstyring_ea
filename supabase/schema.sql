@@ -132,6 +132,10 @@ create policy "fuld adgang for indloggede" on comments
 -- ---------------------------------------------------------------------
 -- Login-kontiene (email + adgangskode) oprettes separat i Supabase under
 -- Authentication → Users — se SETUP.md. Emailen SKAL matche profilens email.
+--
+-- ADVARSEL: 'on conflict do update' betyder at en GEN-KØRSEL af scriptet
+-- nulstiller de 5 profiler til værdierne herunder (navne, roller, aktiv).
+-- Har I rettet profiler i appen, så spring denne blok over ved gen-kørsel.
 
 insert into users (id, initialer, navn, email, rolle, app_rolle, aktiv) values
   ('u-mkj', 'MKJ', 'MKJ', 'mkj@eandersen.dk',  'Marketing',              'admin', true),
@@ -150,25 +154,27 @@ on conflict (id) do update set
 -- =====================================================================
 -- 5) DEMO-DATA (VALGFRI BLOK — SLET HERFRA OG NED FOR EN TOM DATABASE)
 -- =====================================================================
+-- Demo-rekrutteringer bruger numre med DEMO-præfiks, så appens rigtige
+-- EA-ÅÅÅÅ-NNN-serie starter upåvirket fra 001.
 
 insert into recruitments (id, rekrutteringsnummer, titel, virksomhedsnavn, opgavetype,
     beskrivelse, rekrutteringspartner, rekrutteringskonsulent, fase, status, honorar,
     startdato, ansaettelsesdato, annulleringsaarsag, favorit, oprettet_af)
 values
   ('demo-r-01',
-   'EA-' || extract(year from current_date) || '-901',
-   'CFO rekruttering (demo)', 'Novatek A/S', 'Fuld rekruttering',
+   'DEMO-' || extract(year from current_date) || '-001',
+   'CFO-rekruttering (demo)', 'Novatek A/S', 'Fuld rekruttering',
    'Demo: CFO til techvirksomhed i vækst.',
    'u-hrn', 'u-bdl', 'Rekrutteringsfase', 'Aktiv', 480000,
    current_date - 45, null, null, true, 'u-hrn'),
   ('demo-r-02',
-   'EA-' || extract(year from current_date) || '-902',
+   'DEMO-' || extract(year from current_date) || '-002',
    'HR Business Partner (demo)', 'Danske Maskinfabrikker A/S', 'Fuld rekruttering',
    'Demo: HRBP til produktionsvirksomhed.',
    'u-efa', 'u-bdl', 'Afslutningsfase', 'Besat', 320000,
    current_date - 80, current_date - 10, null, false, 'u-efa'),
   ('demo-r-03',
-   'EA-' || extract(year from current_date) || '-903',
+   'DEMO-' || extract(year from current_date) || '-003',
    'Salgsdirektør (demo)', 'Fjordlys Pharma ApS', 'Searchopgave',
    'Demo: search efter salgsdirektør med pharma-erfaring.',
    'u-hrn', 'u-lbs', 'Rekrutteringsfase', 'På pause', 250000,

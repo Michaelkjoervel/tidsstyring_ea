@@ -66,13 +66,25 @@ window.DB = (function () {
     });
   }
 
-  /* Admin: JSON-import. I cloud-mode skubbes alt videre til Supabase. */
+  /* Admin: JSON-import. I cloud-mode skubbes hele det nye datasæt til
+     Supabase, og rækker der ikke findes i importen slettes — så importen
+     reelt ERSTATTER data (ellers ville slettede rækker genopstå ved næste
+     hydrering). Skrivningerne serialiseres i cloud.js, så rækkefølgen
+     (forældre før børn ved upsert, børn før forældre ved sletning) holder. */
   function replaceAll(data) {
+    var gammel = store;
     setAll(data);
     persist();
     if (window.Cloud.enabled()) {
       TABLES.forEach(function (t) {
         store[t].forEach(function (row) { Cloud.upsert(t, row); });
+      });
+      ['comments', 'activity_log', 'time_entries', 'recruitments', 'users'].forEach(function (t) {
+        var behold = {};
+        store[t].forEach(function (r) { behold[r.id] = true; });
+        (gammel[t] || []).forEach(function (r) {
+          if (!behold[r.id]) Cloud.remove(t, r.id);
+        });
       });
     }
   }
@@ -255,14 +267,17 @@ window.DB = (function () {
     return Math.round(parseFloat(s) * 100) / 100;
   }
 
-  /* "480.000", "480000", "480 000" -> 480000. Tom streng -> null. */
+  /* "480.000", "480000", "480 000 kr." -> 480000. Tom streng -> null.
+     Alt der ikke er et rent beløb (fx "1,2 mio") -> NaN, så valideringen
+     kan afvise det i stedet for at gemme et misvisende tal. */
   function parseBeloeb(input) {
     if (input === null || input === undefined) return null;
     var s = String(input).trim();
     if (s === '') return null;
-    s = s.replace(/\s/g, '').replace(/\./g, '').replace(/,/g, '.').replace(/kr\.?/i, '');
-    var n = parseFloat(s);
-    return isNaN(n) ? NaN : Math.round(n);
+    s = s.replace(/kr\.?$/i, '').trim();
+    s = s.replace(/\s/g, '').replace(/\./g, '').replace(/,/g, '.');
+    if (!/^-?\d+(\.\d+)?$/.test(s)) return NaN;
+    return Math.round(parseFloat(s));
   }
 
   /* ---------- Validering (danske fejlbeskeder) ---------- */
@@ -291,8 +306,12 @@ window.DB = (function () {
     } else if (data.startdato > todayISO()) {
       errors.push('Startdato må ikke ligge i fremtiden.');
     }
-    if (data.honorar !== null && data.honorar !== undefined && isNaN(data.honorar)) {
-      errors.push('Honorar skal være et beløb, fx 480.000.');
+    if (data.honorar !== null && data.honorar !== undefined) {
+      if (isNaN(data.honorar)) {
+        errors.push('Honorar skal være et beløb, fx 480.000.');
+      } else if (data.honorar < 0) {
+        errors.push('Honorar kan ikke være negativt.');
+      }
     }
     return errors;
   }
@@ -313,6 +332,8 @@ window.DB = (function () {
     }
     if (!data.dato || !/^\d{4}-\d{2}-\d{2}$/.test(data.dato)) {
       errors.push('Dato er påkrævet.');
+    } else if (data.dato > todayISO()) {
+      errors.push('Dato må ikke ligge i fremtiden.');
     }
     if (isNaN(data.timer)) {
       errors.push('Ugyldigt timetal — brug fx 2,5.');

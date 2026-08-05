@@ -8,8 +8,11 @@
  */
 window.Cloud = (function () {
   var client = null;
-  var queue = [];        // fejlede skrivninger: {op, table, payload}
+  var queue = [];                  // fejlede skrivninger: {op, table, payload, forsoeg}
   var flushTimer = null;
+  var writeChain = Promise.resolve(); // serialiserer skrivninger (bevarer FK-rækkefølge)
+  var MAX_FORSOEG = 6;
+  var PAGE = 1000;                 // PostgREST returnerer højst 1000 rækker pr. kald
 
   var TABLES = ['users', 'recruitments', 'time_entries', 'activity_log', 'comments'];
 
@@ -50,39 +53,57 @@ window.Cloud = (function () {
     client.auth.onAuthStateChange(function (_event, session) { cb(session); });
   }
 
-  /* Henter alle tabeller og returnerer et komplet datasæt til cachen. */
+  /* Henter alle tabeller (pagineret — PostgREST afkorter ellers ved 1000 rækker)
+     og returnerer et komplet datasæt til cachen. */
   async function hydrate() {
     var data = {};
     for (var i = 0; i < TABLES.length; i++) {
       var t = TABLES[i];
-      var res = await client.from(t).select('*');
-      if (res.error) throw res.error;
-      data[t] = res.data || [];
+      var rows = [];
+      var from = 0;
+      for (;;) {
+        var res = await client.from(t).select('*').range(from, from + PAGE - 1);
+        if (res.error) throw res.error;
+        rows = rows.concat(res.data || []);
+        if (!res.data || res.data.length < PAGE) break;
+        from += PAGE;
+      }
+      data[t] = rows;
     }
     return data;
   }
 
-  /* Write-through: læg i kø ved fejl, så intet går tabt. */
-  async function upsert(table, row) {
-    try {
-      var res = await client.from(table).upsert(row);
-      if (res.error) throw res.error;
-    } catch (e) {
-      console.error('Cloud-upsert fejlede (' + table + '):', e);
-      queue.push({ op: 'upsert', table: table, payload: row });
-      notifyQueued();
+  async function executeWrite(item) {
+    var res;
+    if (item.op === 'upsert') {
+      res = await client.from(item.table).upsert(item.payload);
+    } else {
+      res = await client.from(item.table).delete().eq('id', item.payload);
     }
+    if (res.error) throw res.error;
   }
 
-  async function remove(table, id) {
-    try {
-      var res = await client.from(table).delete().eq('id', id);
-      if (res.error) throw res.error;
-    } catch (e) {
-      console.error('Cloud-sletning fejlede (' + table + '):', e);
-      queue.push({ op: 'remove', table: table, payload: id });
-      notifyQueued();
-    }
+  /* Write-through. Alle skrivninger serialiseres gennem én kæde, så
+     rækkefølgen bevares (fx rekruttering før dens log-poster).
+     Fejlede skrivninger lægges i kø og forsøges igen automatisk. */
+  function enqueueWrite(item) {
+    writeChain = writeChain.then(function () {
+      return executeWrite(item).catch(function (e) {
+        console.error('Cloud-skrivning fejlede (' + item.table + '):', e);
+        item.forsoeg = (item.forsoeg || 0) + 1;
+        queue.push(item);
+        notifyQueued();
+      });
+    });
+    return writeChain;
+  }
+
+  function upsert(table, row) {
+    return enqueueWrite({ op: 'upsert', table: table, payload: row, forsoeg: 0 });
+  }
+
+  function remove(table, id) {
+    return enqueueWrite({ op: 'remove', table: table, payload: id, forsoeg: 0 });
   }
 
   function notifyQueued() {
@@ -91,7 +112,9 @@ window.Cloud = (function () {
     }
   }
 
-  /* Forsøg at aflevere kø-lagte skrivninger igen. */
+  /* Forsøg at aflevere kø-lagte skrivninger igen. Efter for mange forgæves
+     forsøg opgives skrivningen med tydelig besked, i stedet for at fejle
+     stille for evigt (fx ved dublet-rekrutteringsnummer). */
   async function flush() {
     if (!enabled() || queue.length === 0) return;
     var pending = queue.slice();
@@ -99,15 +122,18 @@ window.Cloud = (function () {
     for (var i = 0; i < pending.length; i++) {
       var item = pending[i];
       try {
-        var res;
-        if (item.op === 'upsert') {
-          res = await client.from(item.table).upsert(item.payload);
-        } else {
-          res = await client.from(item.table).delete().eq('id', item.payload);
-        }
-        if (res.error) throw res.error;
+        await executeWrite(item);
       } catch (e) {
-        queue.push(item); // stadig fejl — behold i køen
+        item.forsoeg = (item.forsoeg || 0) + 1;
+        if (item.forsoeg >= MAX_FORSOEG) {
+          console.error('Cloud-skrivning opgivet efter ' + item.forsoeg + ' forsøg (' + item.table + '):', e, item.payload);
+          if (window.Toast) {
+            Toast.show('En ændring kunne ikke gemmes i skyen og er opgivet (' + item.table +
+              '). Genindlæs siden og prøv igen.', 'error');
+          }
+        } else {
+          queue.push(item); // stadig fejl — behold i køen
+        }
       }
     }
     if (pending.length > 0 && queue.length === 0 && window.Toast) {

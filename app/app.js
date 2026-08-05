@@ -35,7 +35,13 @@ window.App = {
         var session = await Cloud.getSession();
         if (session && session.user) {
           DB.setAll(await Cloud.hydrate());
-          App.user = profileByEmail(session.user.email);
+          var profil = profileByEmail(session.user.email);
+          if (profil && profil.aktiv !== false) {
+            App.user = profil;
+          } else {
+            // Nedlagt/ukendt profil må ikke genoptage en gammel session.
+            await Cloud.signOut();
+          }
         }
       } catch (e) {
         console.error('Kunne ikke genoprette session:', e);
@@ -75,7 +81,15 @@ window.App = {
       try {
         DB.setAll(await Cloud.hydrate());
         var frisk = DB.get('users', App.user.id);
-        if (frisk) App.user = frisk;
+        if (frisk && frisk.aktiv !== false) {
+          App.user = frisk;
+        } else {
+          // Brugeren er nedlagt (eller slettet) siden sidst — log ud.
+          App.user = null;
+          resetState();
+          try { await Cloud.signOut(); } catch (e2) { }
+          Toast.show('Din bruger er nedlagt. Kontakt en administrator.', 'error');
+        }
       } catch (e) {
         console.error('Hydrering fejlede:', e);
         Toast.show('Kunne ikke hente data fra skyen — viser senest kendte data.', 'error');
@@ -84,7 +98,19 @@ window.App = {
     render();
   }
 
+  function resetState() {
+    App.state = {
+      dash: { fra: '', til: '' },
+      rec: { q: '', status: '', fase: '', type: '', partner: '' },
+      tid: { bruger: '', filterRek: '', fra: '', til: '', rek: '' },
+      rap: { fra: '', til: '' },
+      detailTab: 'tid'
+    };
+    lastDetailId = null;
+  }
+
   function render() {
+    Modal.close(); // en åben modal må ikke overleve navigation/re-render
     var app = document.getElementById('app');
     if (!App.user) {
       app.innerHTML = Views.login();
@@ -174,6 +200,7 @@ window.App = {
           return;
         }
         App.user = profile;
+        resetState();
         location.hash = '#/dashboard';
         Toast.show('Velkommen, ' + DB.userLabel(profile.id) + '!', 'success');
         render();
@@ -231,6 +258,8 @@ window.App = {
       var el = e.target;
       if (el.matches && el.matches('[data-filter]')) {
         if (el.type === 'search' || el.type === 'text') return;
+        // Gendan fokus efter re-render, så filtre kan betjenes med tastatur.
+        pendingFocus = { key: el.getAttribute('data-filter'), pos: null };
         setFilter(el.getAttribute('data-filter'), el.value);
         return;
       }
@@ -282,6 +311,7 @@ window.App = {
         try { localStorage.removeItem('ea_tid_session'); } catch (e) { }
       }
       App.user = null;
+      resetState(); // filtre og valg må ikke lække til næste bruger
       location.hash = '';
       render();
     },
@@ -293,6 +323,7 @@ window.App = {
         return;
       }
       App.user = u;
+      resetState();
       try { localStorage.setItem('ea_tid_session', u.id); } catch (e) { }
       location.hash = '#/dashboard';
       Toast.show('Velkommen, ' + DB.userLabel(u.id) + '!', 'success');
@@ -477,12 +508,17 @@ window.App = {
       body:
         '<p class="modal-text">' + esc(r.rekrutteringsnummer + ' · ' + r.titel) + '</p>' +
         '<label class="field"><span>Ansættelsesdato <em>*</em></span>' +
-        '<input type="date" name="ansaettelsesdato" value="' + escAttr(DB.todayISO()) + '"></label>',
+        '<input type="date" name="ansaettelsesdato" value="' + escAttr(DB.todayISO()) + '"' +
+        (r.startdato ? ' min="' + escAttr(r.startdato) + '"' : '') + '></label>',
       okLabel: 'Markér som besat',
       onSubmit: function (form) {
         var dato = new FormData(form).get('ansaettelsesdato');
         if (!dato) {
           Toast.show('Ansættelsesdato er påkrævet.', 'error');
+          return;
+        }
+        if (r.startdato && dato < r.startdato) {
+          Toast.show('Ansættelsesdatoen kan ikke ligge før startdatoen (' + DB.fmtDato(r.startdato) + ').', 'error');
           return;
         }
         Modal.close();
@@ -638,7 +674,7 @@ window.App = {
     if (commentForm) commentForm.addEventListener('submit', submitCommentForm);
   }
 
-  function submitRecForm(e) {
+  async function submitRecForm(e) {
     e.preventDefault();
     var form = e.currentTarget;
     var fd = new FormData(form);
@@ -664,6 +700,11 @@ window.App = {
       var eksisterende = DB.get('recruitments', id);
       if (!eksisterende) return;
       var gammelFase = eksisterende.fase;
+      // Fase kan ikke ændres på en lukket rekruttering (samme regel som på
+      // detaljesiden, hvor fase-knapperne er deaktiveret).
+      if (DB.LUKKEDE_STATUSSER.indexOf(eksisterende.status) !== -1) {
+        data.fase = eksisterende.fase;
+      }
       DB.update('recruitments', id, data);
       DB.log(id, App.user.id, 'redigeret', 'Rekrutteringen blev redigeret');
       if (gammelFase !== data.fase) {
@@ -672,6 +713,11 @@ window.App = {
       Toast.show('Ændringerne er gemt.', 'success');
       location.hash = '#/rekrutteringer/' + id;
     } else {
+      // I cloud-mode: hent friskeste data lige inden nummeret tildeles, så
+      // to samtidige brugere ikke får samme fortløbende nummer.
+      if (window.EA_CONFIG.CLOUD && Cloud.enabled()) {
+        try { DB.setAll(await Cloud.hydrate()); } catch (err) { console.error(err); }
+      }
       var row = DB.insert('recruitments', Object.assign({
         rekrutteringsnummer: DB.nextRekrutteringsnummer(),
         status: 'Aktiv',
@@ -772,6 +818,11 @@ window.App = {
   function csvValue(v) {
     if (v === null || v === undefined) return '';
     var s = String(v);
+    // Neutralisér formel-tegn (Excel evaluerer =, +, @ og tab som formler,
+    // også i citerede celler). Negative tal og "2,5" røres ikke.
+    if (/^[=+@\t]/.test(s) || (/^-/.test(s) && !/^-?\d+(,\d+)?$/.test(s))) {
+      s = "'" + s;
+    }
     if (/[";\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
     return s;
   }
@@ -808,6 +859,10 @@ window.App = {
       return true;
     });
     var gnsDage = DB.gnsDageTilBesaettelse(recs);
+    var recsMedTid = {};
+    entries.forEach(function (e) { recsMedTid[e.recruitment_id] = true; });
+    var antalMedTid = Object.keys(recsMedTid).length;
+    var totalTimer = DB.sumTimer(entries);
     var rows = [
       ['erwin andersen tidsregistrering — dashboard'],
       ['Periode', (f.fra ? DB.fmtDato(f.fra) : 'Alt') + ' – ' + (f.til ? DB.fmtDato(f.til) : 'i dag')],
@@ -817,7 +872,8 @@ window.App = {
       ['Aktive', recs.filter(function (r) { return r.status === 'Aktiv'; }).length],
       ['Besatte', recs.filter(function (r) { return r.status === 'Besat'; }).length],
       ['Annullerede', recs.filter(function (r) { return r.status === 'Annulleret'; }).length],
-      ['Samlede timer', csvTal(DB.sumTimer(entries))],
+      ['Samlede timer', csvTal(totalTimer)],
+      ['Gns. timer pr. rekruttering (med registreret tid)', antalMedTid === 0 ? '' : csvTal(totalTimer / antalMedTid)],
       ['Gns. dage til besættelse', gnsDage === null ? '' : gnsDage]
     ];
     [['Timer pr. rolle', DB.timerPrRolle(entries)],

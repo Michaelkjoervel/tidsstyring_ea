@@ -55,6 +55,11 @@ browseren. Under **Admin → Nulstil demo-data** kan du starte forfra.
    5 brugerprofiler — plus lidt demo-data (den nederste blok i scriptet kan
    slettes, hvis I vil starte med en tom database).
 
+> **Bemærk ved gen-kørsel:** Scriptet kan køres igen uden fejl, men
+> brugerprofil-blokken nulstiller de 5 profiler til scriptets værdier
+> (navne, roller, aktiv). Har I rettet profiler i appen, så udelad den
+> blok, når scriptet køres igen.
+
 ### 3. Opret login-konti
 
 Brugerprofilerne i databasen er kun stamdata — selve login-kontiene
