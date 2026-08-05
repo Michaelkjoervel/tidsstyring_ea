@@ -563,13 +563,13 @@ window.App = {
       title: 'Ret tidsregistrering',
       body:
         '<p class="modal-text">' + esc(rec ? rec.rekrutteringsnummer + ' · ' + rec.titel : '') + '</p>' +
+        '<p class="mini-note">Registreret af ' + esc(DB.userLabel(entry.user_id)) + ' som ' +
+          rolleBadge(entry.rolle) + ' — rollen fastholdes.</p>' +
         '<div class="form-grid">' +
           '<label class="field"><span>Dato</span>' +
             '<input type="date" name="dato" value="' + escAttr(entry.dato) + '" max="' + escAttr(DB.todayISO()) + '"></label>' +
           '<label class="field"><span>Timer <em>*</em></span>' +
             '<input type="text" name="timer" inputmode="decimal" value="' + escAttr(DB.fmtTal(entry.timer, 2)) + '"></label>' +
-          '<label class="field"><span>Rolle</span>' +
-            '<select name="rolle">' + selectOptions(DB.ROLLER, entry.rolle) + '</select></label>' +
           '<label class="field"><span>Fase</span>' +
             '<select name="fase">' + selectOptions(DB.FASER, entry.fase) + '</select></label>' +
           '<label class="field span-2"><span>Beskrivelse</span>' +
@@ -581,7 +581,6 @@ window.App = {
         var patch = {
           dato: String(fd.get('dato') || ''),
           timer: DB.parseTimer(fd.get('timer')),
-          rolle: String(fd.get('rolle') || ''),
           fase: String(fd.get('fase') || ''),
           beskrivelse: String(fd.get('beskrivelse') || '').trim()
         };
@@ -748,7 +747,7 @@ window.App = {
     var data = {
       recruitment_id: String(fd.get('recruitment_id') || ''),
       user_id: App.user.id,
-      rolle: String(fd.get('rolle') || ''),
+      rolle: App.user.rolle, // tildeles automatisk ud fra den indloggede bruger
       fase: String(fd.get('fase') || ''),
       dato: String(fd.get('dato') || ''),
       timer: DB.parseTimer(fd.get('timer')),

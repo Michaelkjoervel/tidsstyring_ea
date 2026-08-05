@@ -447,14 +447,15 @@ window.Views = (function () {
             '<input type="date" name="dato" value="' + escAttr(DB.todayISO()) + '" max="' + escAttr(DB.todayISO()) + '"></label>' +
           '<label class="field"><span>Timer <em>*</em></span>' +
             '<input type="text" name="timer" inputmode="decimal" placeholder="fx 2,5" autocomplete="off"></label>' +
-          '<label class="field"><span>Rolle</span>' +
-            '<select name="rolle">' + selectOptions(DB.ROLLER, App.user.rolle) + '</select></label>' +
           '<label class="field"><span>Fase</span>' +
             '<select name="fase" id="tid-fase">' + selectOptions(DB.FASER, defaultFase) + '</select></label>' +
           '<label class="field span-2"><span>Beskrivelse</span>' +
             '<input type="text" name="beskrivelse" placeholder="Hvad blev tiden brugt på? (valgfrit)"></label>' +
         '</div>' +
-        '<div class="form-foot"><button type="submit" class="btn btn-primary">' + icon('clock') + 'Registrér tid</button></div>' +
+        '<div class="form-foot tid-foot">' +
+          '<span class="mini-note">Rollen ' + rolleBadge(App.user.rolle) + ' tildeles automatisk ud fra din bruger.</span>' +
+          '<button type="submit" class="btn btn-primary">' + icon('clock') + 'Registrér tid</button>' +
+        '</div>' +
       '</form>' +
       '<div class="card toolbar">' +
         '<select data-filter="tid:bruger">' + selectOptions(brugerOpts, f.bruger, 'Medarbejder: alle') + '</select>' +
