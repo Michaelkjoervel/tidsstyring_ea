@@ -212,6 +212,43 @@ window.sidebarHtml = function (route, user) {
   return html;
 };
 
+/* ---------- Hurtig tidsregistrering (bjælke øverst) ---------- */
+
+window.quickBar = function () {
+  var recs = DB.all('recruitments')
+    .filter(function (r) { return DB.LUKKEDE_STATUSSER.indexOf(r.status) === -1; })
+    .sort(function (a, b) {
+      if (!!a.favorit !== !!b.favorit) return a.favorit ? -1 : 1;
+      return (b.rekrutteringsnummer || '').localeCompare(a.rekrutteringsnummer || '');
+    });
+  var label = '<span class="quickbar-label">' + icon('clock') + 'Hurtig tidsregistrering</span>';
+  if (recs.length === 0) {
+    return '<div class="quickbar">' + label +
+      '<span class="quickbar-tom">Ingen åbne rekrutteringer — <a href="#/rekrutteringer/ny">opret en</a> for at registrere tid.</span>' +
+      '</div>';
+  }
+  var valgt = App.state.quick.rek;
+  if (!recs.some(function (r) { return r.id === valgt; })) valgt = '';
+  var opts = recs.map(function (r) {
+    return { value: r.id, label: (r.favorit ? '★ ' : '') + r.rekrutteringsnummer + ' · ' + r.titel };
+  });
+  var hint = 'Registreres med dags dato, din rolle (' + escAttr(App.user.rolle) +
+    ') og rekrutteringens aktuelle fase';
+  return '<div class="quickbar">' +
+    '<form id="quick-tid-form" class="quickbar-form" novalidate>' +
+      label +
+      '<select name="recruitment_id" id="quick-rek" class="quickbar-rek" aria-label="Rekruttering">' +
+        selectOptions(opts, valgt, 'Vælg rekruttering…') + '</select>' +
+      '<input type="text" name="timer" class="quickbar-timer" placeholder="Timer, fx 2,5" ' +
+        'inputmode="decimal" autocomplete="off" aria-label="Timer">' +
+      '<input type="text" name="beskrivelse" class="quickbar-desc" placeholder="Beskrivelse (valgfri)" ' +
+        'aria-label="Beskrivelse">' +
+      '<button type="submit" class="btn btn-primary btn-sm" title="' + hint + '">Registrér</button>' +
+      '<a href="#/tid" class="quickbar-mere" title="Alle felter: dato, rolle og fase">Flere felter</a>' +
+    '</form>' +
+    '</div>';
+};
+
 /* ---------- KPI-kort ---------- */
 
 window.kpiCard = function (label, value, sub) {

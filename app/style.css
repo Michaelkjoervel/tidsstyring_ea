@@ -138,6 +138,31 @@ a:hover { text-decoration: underline; }
 
 .content { padding: 26px 30px 60px; max-width: 1220px; width: 100%; margin: 0 auto; }
 
+/* ---------- Hurtig tidsregistrering (bjælke øverst) ---------- */
+
+.quickbar {
+  background: var(--card); border-bottom: 1px solid var(--line);
+  padding: 10px 30px;
+  position: sticky; top: 0; z-index: 30;
+  box-shadow: 0 2px 12px rgba(87, 100, 83, 0.06);
+}
+.quickbar, .quickbar-form {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.quickbar-form { flex: 1; max-width: 1220px; margin: 0 auto; }
+.quickbar-label {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--primary); white-space: nowrap;
+}
+.quickbar-label .icon { width: 16px; height: 16px; color: var(--accent-dark); }
+.quickbar select, .quickbar input { padding: 7px 10px; font-size: 0.86rem; }
+.quickbar-rek { flex: 1 1 240px; min-width: 190px; max-width: 430px; }
+.quickbar-timer { width: 118px; }
+.quickbar-desc { flex: 1 1 150px; min-width: 130px; }
+.quickbar-mere { font-size: 0.78rem; white-space: nowrap; }
+.quickbar-tom { font-size: 0.84rem; color: var(--ink-muted); display: inline-flex; align-items: center; gap: 5px; margin-left: 12px; }
+
 /* ---------- Sidehoved ---------- */
 
 .page-head {
@@ -559,6 +584,8 @@ textarea { resize: vertical; width: 100%; }
 
 @media (max-width: 860px) {
   .topbar { display: flex; }
+  .quickbar { position: static; padding: 10px 14px; }
+  .quickbar-rek { max-width: none; }
   .layout { display: block; }
   .sidebar {
     position: fixed; left: 0; top: 0; bottom: 0; z-index: 60;

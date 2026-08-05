@@ -8,6 +8,7 @@ window.App = {
     rec: { q: '', status: '', fase: '', type: '', partner: '' },
     tid: { bruger: '', filterRek: '', fra: '', til: '', rek: '' },
     rap: { fra: '', til: '' },
+    quick: { rek: '' },
     detailTab: 'tid'
   }
 };
@@ -104,6 +105,7 @@ window.App = {
       rec: { q: '', status: '', fase: '', type: '', partner: '' },
       tid: { bruger: '', filterRek: '', fra: '', til: '', rek: '' },
       rap: { fra: '', til: '' },
+      quick: { rek: '' },
       detailTab: 'tid'
     };
     lastDetailId = null;
@@ -160,6 +162,7 @@ window.App = {
             '<button type="button" class="btn-icon" data-action="nav-toggle" aria-label="Menu">' + icon('menu') + '</button>' +
             '<span class="topbar-title">erwin andersen <strong>tidsregistrering</strong></span>' +
           '</header>' +
+          (parts[0] === 'tid' ? '' : quickBar()) +
           '<main class="content">' + inner + '</main>' +
         '</div>' +
       '</div>';
@@ -261,6 +264,10 @@ window.App = {
         // Gendan fokus efter re-render, så filtre kan betjenes med tastatur.
         pendingFocus = { key: el.getAttribute('data-filter'), pos: null };
         setFilter(el.getAttribute('data-filter'), el.value);
+        return;
+      }
+      if (el.id === 'quick-rek') {
+        App.state.quick.rek = el.value;
         return;
       }
       if (el.id === 'tid-rek') {
@@ -672,6 +679,9 @@ window.App = {
 
     var commentForm = document.getElementById('comment-form');
     if (commentForm) commentForm.addEventListener('submit', submitCommentForm);
+
+    var quickForm = document.getElementById('quick-tid-form');
+    if (quickForm) quickForm.addEventListener('submit', submitQuickTidForm);
   }
 
   async function submitRecForm(e) {
@@ -755,6 +765,36 @@ window.App = {
     App.state.tid.rek = data.recruitment_id; // gør det nemt at registrere flere
     Toast.show(DB.fmtTimer(data.timer) + ' er registreret.', 'success');
     render();
+  }
+
+  /* Hurtig-bjælken: dato = i dag, rolle = brugerens, fase = rekrutteringens. */
+  function submitQuickTidForm(e) {
+    e.preventDefault();
+    var fd = new FormData(e.currentTarget);
+    var recId = String(fd.get('recruitment_id') || '');
+    var rec = DB.get('recruitments', recId);
+    var data = {
+      recruitment_id: recId,
+      user_id: App.user.id,
+      rolle: App.user.rolle,
+      fase: rec ? rec.fase : '',
+      dato: DB.todayISO(),
+      timer: DB.parseTimer(fd.get('timer')),
+      beskrivelse: String(fd.get('beskrivelse') || '').trim()
+    };
+    var errors = DB.validateTimeEntry(data);
+    if (errors.length) {
+      Toast.errors(errors);
+      return;
+    }
+    DB.insert('time_entries', data);
+    DB.log(recId, App.user.id, 'tid_registreret',
+      'Tid registreret: ' + DB.fmtTimer(data.timer) + ' den ' + DB.fmtDato(data.dato) + ' (' + data.fase + ')');
+    App.state.quick.rek = recId; // gør det nemt at registrere flere i træk
+    Toast.show(DB.fmtTimer(data.timer) + ' er registreret på ' + rec.rekrutteringsnummer + '.', 'success');
+    render();
+    var timerFelt = document.querySelector('#quick-tid-form [name=timer]');
+    if (timerFelt) timerFelt.focus();
   }
 
   function submitCommentForm(e) {
