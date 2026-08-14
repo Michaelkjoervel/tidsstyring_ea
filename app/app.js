@@ -161,6 +161,9 @@ window.App = {
           '<header class="topbar">' +
             '<button type="button" class="btn-icon" data-action="nav-toggle" aria-label="Menu">' + icon('menu') + '</button>' +
             '<span class="topbar-title">erwin andersen <strong>tidsregistrering</strong></span>' +
+            '<span class="topbar-user">' + esc(App.user.initialer) + '</span>' +
+            '<button type="button" class="btn-icon topbar-logout" data-action="logout" ' +
+              'title="Log ud" aria-label="Log ud">' + icon('logout') + '</button>' +
           '</header>' +
           (parts[0] === 'tid' ? '' : quickBar()) +
           '<main class="content">' + inner + '</main>' +

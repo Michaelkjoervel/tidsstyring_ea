@@ -106,7 +106,7 @@ a:hover { text-decoration: underline; }
 
 .sidebar-foot {
   padding: 14px; border-top: 1px solid rgba(255, 255, 255, 0.12);
-  display: flex; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 10px;
 }
 
 .sidebar-user { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
@@ -122,8 +122,24 @@ a:hover { text-decoration: underline; }
 }
 .avatar-sm { width: 28px; height: 28px; font-size: 0.66rem; }
 
-.btn-logout { color: #dfe5d8; }
-.btn-logout:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.btn-logout {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 9px 12px; border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.06);
+  color: #eef2e8; cursor: pointer; font: inherit; font-size: 0.86rem; font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-logout:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.4); color: #fff; }
+.btn-logout .icon { width: 17px; height: 17px; }
+
+/* Log ud i mobilens topbjælke — sidebaren ligger bag burgermenuen der. */
+.topbar-user {
+  margin-left: auto; font-size: 0.78rem; font-weight: 700;
+  background: var(--accent); color: var(--primary);
+  padding: 3px 9px; border-radius: 999px;
+}
+.topbar-logout { color: #dfe5d8; }
+.topbar-logout:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
 
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 

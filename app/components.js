@@ -205,8 +205,8 @@ window.sidebarHtml = function (route, user) {
             '<small>' + esc(user.rolle) + (user.app_rolle === 'admin' ? ' · admin' : '') + '</small>' +
           '</span>' +
         '</div>' +
-        '<button type="button" class="btn-icon btn-logout" data-action="logout" title="Log ud" aria-label="Log ud">' +
-          icon('logout') + '</button>' +
+        '<button type="button" class="btn-logout" data-action="logout" title="Log ud og skift bruger">' +
+          icon('logout') + '<span>Log ud</span></button>' +
       '</div>' +
     '</aside>';
   return html;
