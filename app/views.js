@@ -69,20 +69,59 @@ window.Views = (function () {
       '</div>' +
       '<p class="page-note">Rekrutteringer afgrænses efter startdato, timer efter registreringsdato.</p>' +
       '<div class="kpi-grid">' +
-        kpiCard('Rekrutteringer', String(antal)) +
+        kpiCard('Samlede timer', DB.fmtTimer(totalTimer)) +
+        kpiCard('Gns. timer pr. rekruttering', gnsTimer === null ? '—' : DB.fmtTimer(gnsTimer), 'med registreret tid') +
+        kpiCard('Rekrutteringer med tid', String(antalMedTid), 'ud af ' + antal + ' i alt') +
         kpiCard('Aktive', String(aktive)) +
         kpiCard('Besatte', String(besatte)) +
         kpiCard('Annullerede', String(annullerede)) +
-        kpiCard('Samlede timer', DB.fmtTimer(totalTimer)) +
-        kpiCard('Gns. timer pr. rekruttering', gnsTimer === null ? '—' : DB.fmtTimer(gnsTimer), 'med registreret tid') +
         kpiCard('Gns. dage til besættelse', gnsDage === null ? '—' : gnsDage + ' dage') +
       '</div>' +
+      timerPrRekrutteringKort(entries, totalTimer) +
       '<div class="chart-grid">' +
-        barChart('Timer pr. rolle', DB.timerPrRolle(entries)) +
         barChart('Timer pr. fase', DB.timerPrFase(entries)) +
+        barChart('Timer pr. kategori', DB.timerPrKategori(entries)) +
         barChart('Timer pr. medarbejder', DB.timerPrBruger(entries)) +
+        barChart('Timer pr. rolle', DB.timerPrRolle(entries)) +
         barChart('Timer pr. opgavetype', DB.timerPrOpgavetype(entries)) +
       '</div>';
+  }
+
+  /* Dashboardets omdrejningspunkt: tiden brugt pr. rekruttering. */
+  function timerPrRekrutteringKort(entries, totalTimer) {
+    var rows = DB.timerPrRekruttering(entries);
+    var max = rows.length ? rows[0].value : 0;
+    var body;
+    if (rows.length === 0) {
+      body = emptyState('Der er ikke registreret tid i den valgte periode.');
+    } else {
+      body = '<ol class="rek-timer-liste">' + rows.map(function (row, i) {
+        var r = row.recruitment;
+        var pct = max ? Math.max(1.5, Math.round(row.value / max * 1000) / 10) : 0;
+        var andel = totalTimer ? Math.round(row.value / totalTimer * 100) : 0;
+        return '<li class="rek-timer-row" data-action="row-open" ' +
+            'data-href="#/rekrutteringer/' + escAttr(r.id) + '" ' +
+            'title="' + escAttr(r.titel + ' — ' + DB.fmtTimer(row.value)) + '">' +
+          '<span class="rek-rang">' + (i + 1) + '</span>' +
+          '<span class="rek-info">' +
+            '<span class="rek-navn"><strong>' + esc(r.titel) + '</strong> ' +
+              '<span class="rek-nr">' + esc(r.rekrutteringsnummer) + '</span></span>' +
+            '<span class="rek-meta">' + esc(r.virksomhedsnavn) + '</span>' +
+            '<span class="rek-badges">' + typeBadge(r.opgavetype) + ' ' + faseBadge(r.fase) + ' ' + statusBadge(r.status) + '</span>' +
+          '</span>' +
+          '<span class="rek-bar"><span class="chart-fill" style="width:' + pct + '%"></span></span>' +
+          '<span class="rek-tal">' +
+            '<strong>' + esc(DB.fmtTimer(row.value)) + '</strong>' +
+            '<small>' + andel + ' % af perioden</small>' +
+          '</span>' +
+        '</li>';
+      }).join('') + '</ol>';
+    }
+    return '<div class="card rek-timer-kort">' +
+      '<div class="card-head-row">' +
+        '<h3 class="card-title">Timer pr. rekruttering</h3>' +
+        '<span class="mini-note">Sorteret efter forbrugt tid · klik for at åbne</span>' +
+      '</div>' + body + '</div>';
   }
 
   function periodeFilter(viewKey, f) {
@@ -338,11 +377,14 @@ window.Views = (function () {
         ? emptyState('Der er endnu ikke registreret tid på denne rekruttering.')
         : '<div class="table-scroll"><table class="table">' +
           '<thead><tr><th>Dato</th><th>Medarbejder</th><th>Rolle</th><th>Fase</th>' +
-          '<th class="td-num">Timer</th><th>Beskrivelse</th><th></th></tr></thead>' +
+          '<th class="td-num">Timer</th><th>Kategori / beskrivelse</th><th></th></tr></thead>' +
           '<tbody>' + rows + '</tbody></table></div>');
   }
 
-  function entryRow(e, visRekruttering) {
+  /* visRekruttering: vis kolonnen "Rekruttering" (udelades når oversigten
+     allerede er filtreret til én). visKategoriKolonne: egen kategori-kolonne
+     (bruges på #/tid; på detaljesiden vises kategorien sammen med teksten). */
+  function entryRow(e, visRekruttering, visKategoriKolonne) {
     var kanRette = App.user.app_rolle === 'admin' || e.user_id === App.user.id;
     var rec = visRekruttering ? DB.get('recruitments', e.recruitment_id) : null;
     return '<tr>' +
@@ -356,7 +398,10 @@ window.Views = (function () {
       '<td>' + rolleBadge(e.rolle) + '</td>' +
       '<td>' + faseBadge(e.fase) + '</td>' +
       '<td class="td-num td-strong">' + esc(DB.fmtTimer(e.timer)) + '</td>' +
-      '<td class="td-desc">' + esc(e.beskrivelse || '') + '</td>' +
+      (visKategoriKolonne ? '<td>' + kategoriBadge(e.kategori) + '</td>' : '') +
+      '<td class="td-desc">' +
+        (visKategoriKolonne ? '' : (e.kategori ? kategoriBadge(e.kategori) + (e.beskrivelse ? ' ' : '') : '')) +
+        esc(e.beskrivelse || '') + '</td>' +
       '<td class="td-actions">' + (kanRette
         ? '<button type="button" class="btn-icon" data-action="entry-edit" data-id="' + escAttr(e.id) + '" title="Ret" aria-label="Ret">' + icon('edit') + '</button>' +
           '<button type="button" class="btn-icon btn-icon-danger" data-action="entry-delete" data-id="' + escAttr(e.id) + '" title="Slet" aria-label="Slet">' + icon('trash') + '</button>'
@@ -437,6 +482,8 @@ window.Views = (function () {
       return { value: r.id, label: r.rekrutteringsnummer + ' · ' + r.titel };
     });
 
+    var filtreretRek = f.filterRek ? DB.get('recruitments', f.filterRek) : null;
+
     return '<div class="page-head"><h1>Tidsregistrering</h1></div>' +
       '<form id="tid-form" class="card form-card tid-form" novalidate>' +
         '<h3 class="card-title">Registrér tid</h3>' +
@@ -449,14 +496,26 @@ window.Views = (function () {
             '<input type="text" name="timer" inputmode="decimal" placeholder="fx 2,5" autocomplete="off"></label>' +
           '<label class="field"><span>Fase</span>' +
             '<select name="fase" id="tid-fase">' + selectOptions(DB.FASER, defaultFase) + '</select></label>' +
+          '<label class="field span-2"><span>Kategori</span>' +
+            '<select name="kategori">' + kategoriOptions('', 'Vælg kategori… (valgfri)') + '</select></label>' +
           '<label class="field span-2"><span>Beskrivelse</span>' +
-            '<input type="text" name="beskrivelse" placeholder="Hvad blev tiden brugt på? (valgfrit)"></label>' +
+            '<input type="text" name="beskrivelse" placeholder="Uddybende beskrivelse (valgfri)"></label>' +
         '</div>' +
         '<div class="form-foot tid-foot">' +
           '<span class="mini-note">Rollen ' + rolleBadge(App.user.rolle) + ' tildeles automatisk ud fra din bruger.</span>' +
           '<button type="submit" class="btn btn-primary">' + icon('clock') + 'Registrér tid</button>' +
         '</div>' +
       '</form>' +
+      // Oversigten følger den valgte rekruttering i formularen ovenfor.
+      (filtreretRek
+        ? '<div class="filter-banner">' +
+            icon('briefcase') +
+            '<span>Viser kun tid på <strong>' + esc(filtreretRek.rekrutteringsnummer + ' · ' + filtreretRek.titel) +
+              '</strong> — ' + esc(filtreretRek.virksomhedsnavn) + '</span>' +
+            '<button type="button" class="btn btn-sm btn-secondary" data-action="tid-vis-alle">' +
+              icon('x') + 'Vis alle rekrutteringer</button>' +
+          '</div>'
+        : '') +
       '<div class="card toolbar">' +
         '<select data-filter="tid:bruger">' + selectOptions(brugerOpts, f.bruger, 'Medarbejder: alle') + '</select>' +
         '<select data-filter="tid:filterRek">' + selectOptions(filterRecOpts, f.filterRek, 'Rekruttering: alle') + '</select>' +
@@ -465,11 +524,16 @@ window.Views = (function () {
         '<span class="toolbar-sum">I alt: <strong>' + esc(DB.fmtTimer(DB.sumTimer(entries))) + '</strong></span>' +
       '</div>' +
       (entries.length === 0
-        ? emptyState('Ingen tidsregistreringer matcher filtrene.')
+        ? emptyState(filtreretRek
+            ? 'Der er endnu ikke registreret tid på ' + filtreretRek.rekrutteringsnummer + ' med de valgte filtre.'
+            : 'Ingen tidsregistreringer matcher filtrene.')
         : '<div class="card table-card"><div class="table-scroll"><table class="table">' +
-          '<thead><tr><th>Dato</th><th>Rekruttering</th><th>Medarbejder</th><th>Rolle</th><th>Fase</th>' +
-          '<th class="td-num">Timer</th><th>Beskrivelse</th><th></th></tr></thead>' +
-          '<tbody>' + entries.map(function (e) { return entryRow(e, true); }).join('') + '</tbody></table></div></div>');
+          '<thead><tr><th>Dato</th>' + (filtreretRek ? '' : '<th>Rekruttering</th>') +
+          '<th>Medarbejder</th><th>Rolle</th><th>Fase</th>' +
+          '<th class="td-num">Timer</th><th>Kategori</th><th>Beskrivelse</th><th></th></tr></thead>' +
+          '<tbody>' + entries.map(function (e) {
+            return entryRow(e, !filtreretRek, true);
+          }).join('') + '</tbody></table></div></div>');
   }
 
   /* ---------- 7. Rapporter ---------- */
@@ -510,6 +574,7 @@ window.Views = (function () {
             '<tbody>' + topRows + '</tbody></table></div>') +
       '</div>' +
       '<div class="chart-grid">' +
+        barChart('Timer pr. kategori', DB.timerPrKategori(entries)) +
         barChart('Timer pr. medarbejder', DB.timerPrBruger(entries)) +
         barChart('Timer pr. rolle', DB.timerPrRolle(entries)) +
         barChart('Timer pr. fase', DB.timerPrFase(entries)) +

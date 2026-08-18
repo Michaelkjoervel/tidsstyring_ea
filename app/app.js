@@ -17,6 +17,7 @@ window.App = {
   var lastDetailId = null;
   var debounceTimer = null;
   var pendingFocus = null;
+  var tidFormDraft = null; // bevarer indtastning når #/tid re-renderes
 
   /* ---------- Boot ---------- */
 
@@ -274,11 +275,21 @@ window.App = {
         return;
       }
       if (el.id === 'tid-rek') {
-        // Fase følger som udgangspunkt rekrutteringens aktuelle fase.
+        // Valget styrer både formularen og oversigten nedenfor, så man kun
+        // ser tid på den rekruttering man er ved at registrere på.
+        var form = el.closest('form');
+        if (form) {
+          var fd = new FormData(form);
+          tidFormDraft = {
+            dato: String(fd.get('dato') || ''),
+            timer: String(fd.get('timer') || ''),
+            kategori: String(fd.get('kategori') || ''),
+            beskrivelse: String(fd.get('beskrivelse') || '')
+          };
+        }
         App.state.tid.rek = el.value;
-        var rec = DB.get('recruitments', el.value);
-        var faseSel = document.getElementById('tid-fase');
-        if (rec && faseSel) faseSel.value = rec.fase;
+        App.state.tid.filterRek = el.value; // tom værdi = vis alle igen
+        render();
         return;
       }
       if (el.id === 'admin-import-file') {
@@ -392,8 +403,14 @@ window.App = {
       });
     },
 
+    'tid-vis-alle': function () {
+      App.state.tid.filterRek = '';
+      render();
+    },
+
     'tid-paa-rek': function (el) {
       App.state.tid.rek = el.getAttribute('data-id');
+      App.state.tid.filterRek = el.getAttribute('data-id');
       location.hash = '#/tid';
     },
 
@@ -575,6 +592,8 @@ window.App = {
             '<input type="text" name="timer" inputmode="decimal" value="' + escAttr(DB.fmtTal(entry.timer, 2)) + '"></label>' +
           '<label class="field"><span>Fase</span>' +
             '<select name="fase">' + selectOptions(DB.FASER, entry.fase) + '</select></label>' +
+          '<label class="field span-2"><span>Kategori</span>' +
+            '<select name="kategori">' + kategoriOptions(entry.kategori || '', 'Ingen kategori') + '</select></label>' +
           '<label class="field span-2"><span>Beskrivelse</span>' +
             '<input type="text" name="beskrivelse" value="' + escAttr(entry.beskrivelse || '') + '"></label>' +
         '</div>',
@@ -585,6 +604,7 @@ window.App = {
           dato: String(fd.get('dato') || ''),
           timer: DB.parseTimer(fd.get('timer')),
           fase: String(fd.get('fase') || ''),
+          kategori: String(fd.get('kategori') || ''),
           beskrivelse: String(fd.get('beskrivelse') || '').trim()
         };
         var check = Object.assign({}, entry, patch);
@@ -684,6 +704,16 @@ window.App = {
 
     var quickForm = document.getElementById('quick-tid-form');
     if (quickForm) quickForm.addEventListener('submit', submitQuickTidForm);
+
+    if (tidForm && tidFormDraft) {
+      Object.keys(tidFormDraft).forEach(function (navn) {
+        var felt = tidForm.elements[navn];
+        if (felt && tidFormDraft[navn]) felt.value = tidFormDraft[navn];
+      });
+      tidFormDraft = null;
+      var timerFelt = tidForm.elements.timer;
+      if (timerFelt) timerFelt.focus();
+    }
   }
 
   async function submitRecForm(e) {
@@ -754,6 +784,7 @@ window.App = {
       fase: String(fd.get('fase') || ''),
       dato: String(fd.get('dato') || ''),
       timer: DB.parseTimer(fd.get('timer')),
+      kategori: String(fd.get('kategori') || ''),
       beskrivelse: String(fd.get('beskrivelse') || '').trim()
     };
     var errors = DB.validateTimeEntry(data);
@@ -782,6 +813,7 @@ window.App = {
       fase: rec ? rec.fase : '',
       dato: DB.todayISO(),
       timer: DB.parseTimer(fd.get('timer')),
+      kategori: String(fd.get('kategori') || ''),
       beskrivelse: String(fd.get('beskrivelse') || '').trim()
     };
     var errors = DB.validateTimeEntry(data);
@@ -918,9 +950,24 @@ window.App = {
       ['Gns. timer pr. rekruttering (med registreret tid)', antalMedTid === 0 ? '' : csvTal(totalTimer / antalMedTid)],
       ['Gns. dage til besættelse', gnsDage === null ? '' : gnsDage]
     ];
-    [['Timer pr. rolle', DB.timerPrRolle(entries)],
-     ['Timer pr. fase', DB.timerPrFase(entries)],
+    // Dashboardets hovedtal: tiden pr. rekruttering.
+    rows.push([]);
+    rows.push(['Timer pr. rekruttering', 'Nummer', 'Virksomhed', 'Status', 'Timer', 'Andel %']);
+    DB.timerPrRekruttering(entries).forEach(function (row) {
+      rows.push([
+        row.recruitment.titel,
+        row.recruitment.rekrutteringsnummer,
+        row.recruitment.virksomhedsnavn,
+        row.recruitment.status,
+        csvTal(row.value),
+        totalTimer ? Math.round(row.value / totalTimer * 100) : 0
+      ]);
+    });
+
+    [['Timer pr. fase', DB.timerPrFase(entries)],
+     ['Timer pr. kategori', DB.timerPrKategori(entries)],
      ['Timer pr. medarbejder', DB.timerPrBruger(entries)],
+     ['Timer pr. rolle', DB.timerPrRolle(entries)],
      ['Timer pr. opgavetype', DB.timerPrOpgavetype(entries)]
     ].forEach(function (sektion) {
       rows.push([]);
@@ -973,7 +1020,7 @@ window.App = {
     var f = App.state.rap;
     var entries = DB.entriesIPeriode(f.fra || null, f.til || null)
       .slice().sort(function (a, b) { return a.dato.localeCompare(b.dato); });
-    var rows = [['Dato', 'Rekrutteringsnr.', 'Rekruttering', 'Virksomhed', 'Medarbejder', 'Rolle', 'Fase', 'Timer', 'Beskrivelse']];
+    var rows = [['Dato', 'Rekrutteringsnr.', 'Rekruttering', 'Virksomhed', 'Medarbejder', 'Rolle', 'Fase', 'Timer', 'Kategori', 'Beskrivelse']];
     entries.forEach(function (e) {
       var r = DB.get('recruitments', e.recruitment_id);
       rows.push([
@@ -984,6 +1031,7 @@ window.App = {
         DB.userInitialer(e.user_id),
         e.rolle, e.fase,
         csvTal(e.timer),
+        e.kategori || '',
         e.beskrivelse || ''
       ]);
     });

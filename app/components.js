@@ -80,6 +80,11 @@ window.typeBadge = function (type) {
   return '<span class="badge badge-outline ' + cls + '">' + esc(type) + '</span>';
 };
 
+window.kategoriBadge = function (kategori) {
+  if (!kategori) return '';
+  return '<span class="badge badge-kategori">' + esc(kategori) + '</span>';
+};
+
 window.rolleBadge = function (rolle) {
   return '<span class="badge badge-rolle">' + esc(rolle) + '</span>';
 };
@@ -241,6 +246,8 @@ window.quickBar = function () {
         selectOptions(opts, valgt, 'Vælg rekruttering…') + '</select>' +
       '<input type="text" name="timer" class="quickbar-timer" placeholder="Timer, fx 2,5" ' +
         'inputmode="decimal" autocomplete="off" aria-label="Timer">' +
+      '<select name="kategori" class="quickbar-kat" aria-label="Kategori">' +
+        kategoriOptions('', 'Kategori (valgfri)') + '</select>' +
       '<input type="text" name="beskrivelse" class="quickbar-desc" placeholder="Beskrivelse (valgfri)" ' +
         'aria-label="Beskrivelse">' +
       '<button type="submit" class="btn btn-primary btn-sm" title="' + hint + '">Registrér</button>' +
@@ -303,6 +310,20 @@ window.selectOptions = function (values, selected, emptyLabel) {
     else { val = v; label = v; }
     html += '<option value="' + escAttr(val) + '"' + (val === selected ? ' selected' : '') + '>' +
       esc(label) + '</option>';
+  });
+  return html;
+};
+
+/* Kategori-dropdown med <optgroup> pr. fase-gruppe. */
+window.kategoriOptions = function (selected, emptyLabel) {
+  var html = '<option value="">' + esc(emptyLabel || 'Ingen kategori') + '</option>';
+  DB.KATEGORI_GRUPPER.forEach(function (g) {
+    html += '<optgroup label="' + escAttr(g.gruppe) + '">';
+    g.punkter.forEach(function (k) {
+      html += '<option value="' + escAttr(k) + '"' + (k === selected ? ' selected' : '') + '>' +
+        esc(k) + '</option>';
+    });
+    html += '</optgroup>';
   });
   return html;
 };

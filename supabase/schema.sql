@@ -62,10 +62,17 @@ create table if not exists time_entries (
   fase           text not null check (fase in ('Opstartsfase', 'Rekrutteringsfase', 'Afslutningsfase')),
   dato           date not null,
   timer          numeric not null check (timer > 0 and timer <= 24),
+  kategori       text,
   beskrivelse    text,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );
+
+-- MIGRERING: tilføjer 'kategori' til databaser oprettet før kategorier
+-- blev indført. Harmløs at køre igen på en ny database.
+-- Kategorier gemmes som ren tekst (ingen constraint), så listen i
+-- app/db.js kan ændres frit uden at røre databasen.
+alter table time_entries add column if not exists kategori text;
 
 create table if not exists activity_log (
   id             text primary key default gen_random_uuid()::text,
@@ -181,15 +188,15 @@ values
    current_date - 30, null, null, false, 'u-hrn')
 on conflict (id) do nothing;
 
-insert into time_entries (id, recruitment_id, user_id, rolle, fase, dato, timer, beskrivelse)
+insert into time_entries (id, recruitment_id, user_id, rolle, fase, dato, timer, kategori, beskrivelse)
 values
-  ('demo-t-01', 'demo-r-01', 'u-hrn', 'Rekrutteringspartner',   'Opstartsfase',      current_date - 43, 4,   'Opstartsmøde og jobprofil'),
-  ('demo-t-02', 'demo-r-01', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', current_date - 30, 8,   'Executive search, longlist'),
-  ('demo-t-03', 'demo-r-01', 'u-mkj', 'Marketing',              'Rekrutteringsfase', current_date - 12, 1.5, 'Employer branding-materiale'),
-  ('demo-t-04', 'demo-r-02', 'u-efa', 'Rekrutteringspartner',   'Opstartsfase',      current_date - 78, 2.5, 'Behovsafdækning'),
-  ('demo-t-05', 'demo-r-02', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', current_date - 60, 8,   'Screening af ansøgninger'),
-  ('demo-t-06', 'demo-r-02', 'u-efa', 'Rekrutteringspartner',   'Afslutningsfase',   current_date - 14, 2,   'Referencetagning og ansættelse'),
-  ('demo-t-07', 'demo-r-03', 'u-lbs', 'Rekrutteringskonsulent', 'Opstartsfase',      current_date - 28, 2.5, 'Markedskortlægning')
+  ('demo-t-01', 'demo-r-01', 'u-hrn', 'Rekrutteringspartner',   'Opstartsfase',      current_date - 43, 4,   'Opstartsmøde med kunde',        'Opstartsmøde og jobprofil'),
+  ('demo-t-02', 'demo-r-01', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', current_date - 30, 8,   'Search & research',             'Executive search, longlist'),
+  ('demo-t-03', 'demo-r-01', 'u-mkj', 'Marketing',              'Rekrutteringsfase', current_date - 12, 1.5, 'Annoncetekst & jobopslag',      'Employer branding-materiale'),
+  ('demo-t-04', 'demo-r-02', 'u-efa', 'Rekrutteringspartner',   'Opstartsfase',      current_date - 78, 2.5, 'Behovsafdækning & jobprofil',   'Behovsafdækning'),
+  ('demo-t-05', 'demo-r-02', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', current_date - 60, 8,   'Screening af ansøgninger',      null),
+  ('demo-t-06', 'demo-r-02', 'u-efa', 'Rekrutteringspartner',   'Afslutningsfase',   current_date - 14, 2,   'Referencetagning',              'Referencetagning og ansættelse'),
+  ('demo-t-07', 'demo-r-03', 'u-lbs', 'Rekrutteringskonsulent', 'Opstartsfase',      current_date - 28, 2.5, 'Markedskortlægning',            null)
 on conflict (id) do nothing;
 
 insert into activity_log (id, recruitment_id, user_id, type, beskrivelse, created_at)

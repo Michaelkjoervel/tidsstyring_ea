@@ -108,9 +108,31 @@ håndhæves af Row Level Security, som kræver et gyldigt login.
 5. Efter ca. et minut er appen live på
    `https://<brugernavn>.github.io/<repo-navn>/`.
 
-> **Cache-busting:** Alle script-tags i `index.html` har `?v=1`. Bump tallet
-> (fx til `?v=2`) når I udruller nye versioner, så browsere ikke bruger
-> gamle cachede filer.
+> **Cache-busting:** Alle script-tags i `index.html` har et `?v=`-nummer
+> (aktuelt `?v=6`). Bump tallet når I udruller nye versioner, så browsere
+> ikke bruger gamle cachede filer.
+
+---
+
+## B2) Opdatering: nye kolonner i databasen
+
+Når appen udvides med nye felter, skal databasen have de tilsvarende
+kolonner. Kør hele `supabase/schema.sql` igen i **SQL Editor** (den er
+skrevet så den kan køres flere gange) — eller kør blot den enkelte
+migreringslinje.
+
+**Kategorier på tidsregistrering** (indført sammen med kategori-dropdownen):
+
+```sql
+alter table time_entries add column if not exists kategori text;
+```
+
+> Indtil migreringen er kørt, gemmer appen tidsregistreringer **uden**
+> kategori i stedet for at fejle — så registrering aldrig blokeres. Kør
+> linjen ovenfor, og kategorier gemmes fra da af.
+>
+> Husk: springer I brugerprofil-blokken over ved gen-kørsel (se advarslen
+> under B, trin 2), bevares jeres egne rettelser af navne og roller.
 
 ---
 

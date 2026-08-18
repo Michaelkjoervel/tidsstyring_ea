@@ -14,6 +14,42 @@ window.DB = (function () {
 
   var ROLLER = ['Rekrutteringspartner', 'Rekrutteringskonsulent', 'Marketing'];
   var FASER = ['Opstartsfase', 'Rekrutteringsfase', 'Afslutningsfase'];
+
+  /* Kategorier til tidsregistrering — grupperet så listen er hurtig at skanne.
+     Ret frit i listen; kategorier bruges kun som tekst (ingen db-constraint),
+     så eksisterende registreringer påvirkes ikke af ændringer her. */
+  var KATEGORI_GRUPPER = [
+    { gruppe: 'Opstart', punkter: [
+      'Opstartsmøde med kunde',
+      'Behovsafdækning & jobprofil',
+      'Annoncetekst & jobopslag',
+      'Markedskortlægning'
+    ] },
+    { gruppe: 'Rekruttering', punkter: [
+      'Search & research',
+      'Kandidatkontakt & dialog',
+      'Screening af ansøgninger',
+      'Interview med kandidat',
+      'Test & assessment',
+      'Kandidatpræsentation for kunde'
+    ] },
+    { gruppe: 'Afslutning', punkter: [
+      'Referencetagning',
+      'Kontrakt & forhandling',
+      'Opfølgning & onboarding'
+    ] },
+    { gruppe: 'Generelt', punkter: [
+      'Statusmøde med kunde',
+      'Administration & dokumentation',
+      'Rejsetid',
+      'Andet'
+    ] }
+  ];
+
+  var KATEGORIER = KATEGORI_GRUPPER.reduce(function (alle, g) {
+    return alle.concat(g.punkter);
+  }, []);
+
   var STATUSSER = ['Aktiv', 'På pause', 'Besat', 'Annulleret', 'Afsluttet'];
   var OPGAVETYPER = ['Fuld rekruttering', 'Searchopgave'];
   var LUKKEDE_STATUSSER = ['Besat', 'Annulleret', 'Afsluttet'];
@@ -335,6 +371,9 @@ window.DB = (function () {
     } else if (data.dato > todayISO()) {
       errors.push('Dato må ikke ligge i fremtiden.');
     }
+    if (data.kategori && KATEGORIER.indexOf(data.kategori) === -1) {
+      errors.push('Ukendt kategori.');
+    }
     if (isNaN(data.timer)) {
       errors.push('Ugyldigt timetal — brug fx 2,5.');
     } else if (data.timer <= 0) {
@@ -394,6 +433,12 @@ window.DB = (function () {
     }, OPGAVETYPER);
   }
 
+  function timerPrKategori(entries) {
+    return timerFordeling(entries, function (e) {
+      return e.kategori || 'Uden kategori';
+    });
+  }
+
   function timerPrRekruttering(entries) {
     var rows = timerFordeling(entries, function (e) { return e.recruitment_id; });
     return rows.map(function (row) {
@@ -434,6 +479,8 @@ window.DB = (function () {
     // konstanter
     ROLLER: ROLLER,
     FASER: FASER,
+    KATEGORIER: KATEGORIER,
+    KATEGORI_GRUPPER: KATEGORI_GRUPPER,
     STATUSSER: STATUSSER,
     OPGAVETYPER: OPGAVETYPER,
     LUKKEDE_STATUSSER: LUKKEDE_STATUSSER,
@@ -477,6 +524,7 @@ window.DB = (function () {
     timerPrFase: timerPrFase,
     timerPrBruger: timerPrBruger,
     timerPrOpgavetype: timerPrOpgavetype,
+    timerPrKategori: timerPrKategori,
     timerPrRekruttering: timerPrRekruttering,
     dageMellem: dageMellem,
     gnsDageTilBesaettelse: gnsDageTilBesaettelse,

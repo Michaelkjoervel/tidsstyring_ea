@@ -73,6 +73,17 @@ window.Cloud = (function () {
     return data;
   }
 
+  /* Finder navnet på en kolonne som databasen ikke kender (PGRST204).
+     Sker hvis en schema-migrering mangler — fx en ny kolonne der endnu
+     ikke er tilføjet i Supabase. */
+  function ukendtKolonne(err) {
+    var besked = (err && (err.message || err.details)) || '';
+    var m = /Could not find the '([^']+)' column/i.exec(besked);
+    if (m) return m[1];
+    m = /column "([^"]+)" of relation/i.exec(besked);
+    return m ? m[1] : null;
+  }
+
   async function executeWrite(item) {
     var res;
     if (item.op === 'upsert') {
@@ -80,7 +91,21 @@ window.Cloud = (function () {
     } else {
       res = await client.from(item.table).delete().eq('id', item.payload);
     }
-    if (res.error) throw res.error;
+    if (res.error) {
+      // Mangler kolonnen i databasen, gemmes rækken uden den i stedet for
+      // at fejle helt — så tidsregistrering virker indtil migreringen køres.
+      var kol = item.op === 'upsert' ? ukendtKolonne(res.error) : null;
+      if (kol && Object.prototype.hasOwnProperty.call(item.payload, kol)) {
+        console.warn('Kolonnen "' + kol + '" mangler i databasen (' + item.table +
+          '). Gemmer uden den — kør migreringen i supabase/schema.sql.');
+        var uden = Object.assign({}, item.payload);
+        delete uden[kol];
+        var res2 = await client.from(item.table).upsert(uden);
+        if (res2.error) throw res2.error;
+        return;
+      }
+      throw res.error;
+    }
   }
 
   /* Write-through. Alle skrivninger serialiseres gennem én kæde, så

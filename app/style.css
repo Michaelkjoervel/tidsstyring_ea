@@ -175,6 +175,7 @@ a:hover { text-decoration: underline; }
 .quickbar select, .quickbar input { padding: 7px 10px; font-size: 0.86rem; }
 .quickbar-rek { flex: 1 1 240px; min-width: 190px; max-width: 430px; }
 .quickbar-timer { width: 118px; }
+.quickbar-kat { flex: 0 1 190px; min-width: 150px; }
 .quickbar-desc { flex: 1 1 150px; min-width: 130px; }
 .quickbar-mere { font-size: 0.78rem; white-space: nowrap; }
 .quickbar-tom { font-size: 0.84rem; color: var(--ink-muted); display: inline-flex; align-items: center; gap: 5px; margin-left: 12px; }
@@ -222,10 +223,69 @@ a:hover { text-decoration: underline; }
 .kpi-label { font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); }
 .kpi-sub { font-size: 0.7rem; color: var(--ink-muted); }
 
+/* ---------- Timer pr. rekruttering (dashboardets hovedkort) ---------- */
+
+.rek-timer-kort .card-head-row { margin-bottom: 14px; }
+.rek-timer-kort .mini-note { margin: 0; }
+.rek-timer-liste { list-style: none; display: flex; flex-direction: column; }
+
+.rek-timer-row {
+  display: grid;
+  grid-template-columns: 30px minmax(160px, 1.6fr) minmax(80px, 1fr) 108px;
+  align-items: center; gap: 14px;
+  padding: 11px 8px; border-radius: var(--radius-sm);
+  border-bottom: 1px solid #f1eee4; cursor: pointer;
+  transition: background 0.12s;
+}
+.rek-timer-row:last-child { border-bottom: none; }
+.rek-timer-row:hover { background: rgba(162, 192, 55, 0.09); }
+
+.rek-rang {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: #eef0e6; color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.74rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.rek-timer-row:nth-child(1) .rek-rang { background: var(--accent); color: #2f3813; }
+.rek-timer-row:nth-child(2) .rek-rang { background: var(--sage); }
+.rek-timer-row:nth-child(3) .rek-rang { background: var(--sand); color: #5c5324; }
+
+.rek-info { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rek-navn { font-size: 0.92rem; color: var(--primary); }
+.rek-navn strong { font-weight: 600; }
+.rek-nr { color: var(--ink-muted); font-weight: 500; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.rek-meta { font-size: 0.8rem; color: var(--ink-soft); }
+.rek-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
+
+.rek-bar {
+  height: 10px; border-radius: 5px;
+  background: rgba(87, 100, 83, 0.08); overflow: hidden;
+}
+
+.rek-tal { text-align: right; display: flex; flex-direction: column; gap: 1px; }
+.rek-tal strong {
+  font-size: 1.02rem; font-weight: 700; color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+.rek-tal small { font-size: 0.7rem; color: var(--ink-muted); }
+
+/* ---------- Filter-banner (tid følger valgt rekruttering) ---------- */
+
+.filter-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: rgba(162, 192, 55, 0.14);
+  border: 1px solid rgba(162, 192, 55, 0.45);
+  border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px;
+  font-size: 0.87rem; color: var(--ink-soft);
+}
+.filter-banner .icon { color: var(--accent-dark); }
+.filter-banner strong { color: var(--primary); }
+.filter-banner .btn { margin-left: auto; }
+
 /* ---------- Diagrammer ---------- */
 
 .chart-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(345px, 1fr));
   gap: 18px; margin-bottom: 18px;
 }
 .chart-card { margin-bottom: 0; }
@@ -233,7 +293,7 @@ a:hover { text-decoration: underline; }
 
 .chart-row { display: flex; align-items: center; gap: 10px; }
 .chart-label {
-  flex: 0 0 150px; font-size: 0.8rem; color: var(--ink-soft);
+  flex: 0 0 172px; font-size: 0.8rem; color: var(--ink-soft);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .chart-track {
@@ -247,7 +307,7 @@ a:hover { text-decoration: underline; }
   min-width: 3px;
 }
 .chart-value {
-  flex: 0 0 58px; text-align: right;
+  flex: 0 0 52px; text-align: right;
   font-size: 0.8rem; font-weight: 600; color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -329,6 +389,7 @@ a:hover { text-decoration: underline; }
 .badge-type-search { border-color: var(--info); color: var(--info); }
 
 .badge-rolle { background: #eef0e6; color: var(--primary); }
+.badge-kategori { background: var(--sand); color: #5c5324; }
 .badge-admin { background: var(--primary); color: #fff; }
 
 /* ---------- Toolbar / filtre ---------- */
@@ -602,6 +663,16 @@ textarea { resize: vertical; width: 100%; }
 
 @media (max-width: 860px) {
   .topbar { display: flex; }
+  .rek-timer-row {
+    grid-template-columns: 26px 1fr auto;
+    grid-template-areas: 'rang info tal' '. bar bar';
+    row-gap: 8px;
+  }
+  .rek-rang { grid-area: rang; }
+  .rek-info { grid-area: info; }
+  .rek-tal { grid-area: tal; }
+  .rek-bar { grid-area: bar; }
+  .filter-banner .btn { margin-left: 0; }
   .quickbar { position: static; padding: 10px 14px; }
   .quickbar-rek { max-width: none; }
   .layout { display: block; }

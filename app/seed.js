@@ -81,45 +81,45 @@ window.Seed = (function () {
       };
     });
 
-    // [id, rekruttering, bruger, rolle, fase, dage siden, timer, beskrivelse]
+    // [id, rekruttering, bruger, rolle, fase, dage siden, timer, beskrivelse, kategori]
     var tDefs = [
-      ['t-01', 'r-01', 'u-efa', 'Rekrutteringspartner', 'Opstartsfase', 118, 2, 'Opstartsmøde hos kunden'],
-      ['t-02', 'r-01', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 110, 5.5, 'Search og screening'],
-      ['t-03', 'r-01', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 95, 4, 'Kandidatinterviews'],
-      ['t-04', 'r-01', 'u-efa', 'Rekrutteringspartner', 'Afslutningsfase', 70, 1.5, 'Afsluttende status med kunden'],
+      ['t-01', 'r-01', 'u-efa', 'Rekrutteringspartner', 'Opstartsfase', 118, 2, 'Opstartsmøde hos kunden', 'Opstartsmøde med kunde'],
+      ['t-02', 'r-01', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 110, 5.5, 'Search og screening', 'Search & research'],
+      ['t-03', 'r-01', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 95, 4, 'Kandidatinterviews', 'Interview med kandidat'],
+      ['t-04', 'r-01', 'u-efa', 'Rekrutteringspartner', 'Afslutningsfase', 70, 1.5, 'Afsluttende status med kunden', 'Statusmøde med kunde'],
 
-      ['t-05', 'r-02', 'u-hrn', 'Rekrutteringspartner', 'Opstartsfase', 98, 3, 'Jobprofil og kontrakt'],
-      ['t-06', 'r-02', 'u-mkj', 'Marketing', 'Opstartsfase', 95, 2.5, 'Stillingsopslag og LinkedIn-kampagne'],
-      ['t-07', 'r-02', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 80, 6, 'Search i eget netværk'],
-      ['t-08', 'r-02', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 62, 7.5, 'Interviews, 1. runde'],
-      ['t-09', 'r-02', 'u-hrn', 'Rekrutteringspartner', 'Afslutningsfase', 30, 2, 'Kandidatpræsentation hos kunden'],
-      ['t-10', 'r-02', 'u-hrn', 'Rekrutteringspartner', 'Afslutningsfase', 26, 1.5, 'Kontraktforhandling'],
+      ['t-05', 'r-02', 'u-hrn', 'Rekrutteringspartner', 'Opstartsfase', 98, 3, 'Jobprofil og kontrakt', 'Behovsafdækning & jobprofil'],
+      ['t-06', 'r-02', 'u-mkj', 'Marketing', 'Opstartsfase', 95, 2.5, 'Stillingsopslag og LinkedIn-kampagne', 'Annoncetekst & jobopslag'],
+      ['t-07', 'r-02', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 80, 6, 'Search i eget netværk', 'Search & research'],
+      ['t-08', 'r-02', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 62, 7.5, 'Interviews, 1. runde', 'Interview med kandidat'],
+      ['t-09', 'r-02', 'u-hrn', 'Rekrutteringspartner', 'Afslutningsfase', 30, 2, 'Kandidatpræsentation hos kunden', 'Kandidatpræsentation for kunde'],
+      ['t-10', 'r-02', 'u-hrn', 'Rekrutteringspartner', 'Afslutningsfase', 26, 1.5, 'Kontraktforhandling', 'Kontrakt & forhandling'],
 
-      ['t-11', 'r-03', 'u-efa', 'Rekrutteringspartner', 'Opstartsfase', 78, 2.5, 'Behovsafdækning'],
-      ['t-12', 'r-03', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 60, 8, 'Screening af ansøgninger'],
-      ['t-13', 'r-03', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 45, 6.5, 'Interviews og testtilbagemelding'],
-      ['t-14', 'r-03', 'u-efa', 'Rekrutteringspartner', 'Afslutningsfase', 14, 2, 'Referencetagning og ansættelse'],
+      ['t-11', 'r-03', 'u-efa', 'Rekrutteringspartner', 'Opstartsfase', 78, 2.5, 'Behovsafdækning', 'Behovsafdækning & jobprofil'],
+      ['t-12', 'r-03', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 60, 8, 'Screening af ansøgninger', 'Screening af ansøgninger'],
+      ['t-13', 'r-03', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 45, 6.5, 'Interviews og testtilbagemelding', 'Test & assessment'],
+      ['t-14', 'r-03', 'u-efa', 'Rekrutteringspartner', 'Afslutningsfase', 14, 2, 'Referencetagning og ansættelse', 'Referencetagning'],
 
-      ['t-15', 'r-04', 'u-efa', 'Rekrutteringspartner', 'Opstartsfase', 58, 3, 'Opstart og annoncetekst'],
-      ['t-16', 'r-04', 'u-mkj', 'Marketing', 'Opstartsfase', 55, 1.5, 'Annonceopsætning'],
-      ['t-17', 'r-04', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 40, 7, 'Search og kandidatkontakt'],
-      ['t-18', 'r-04', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 20, 5, 'Interviews, 2. runde'],
-      ['t-19', 'r-04', 'u-efa', 'Rekrutteringspartner', 'Afslutningsfase', 5, 2.5, 'Referencetjek'],
+      ['t-15', 'r-04', 'u-efa', 'Rekrutteringspartner', 'Opstartsfase', 58, 3, 'Opstart og annoncetekst', 'Opstartsmøde med kunde'],
+      ['t-16', 'r-04', 'u-mkj', 'Marketing', 'Opstartsfase', 55, 1.5, 'Annonceopsætning', 'Annoncetekst & jobopslag'],
+      ['t-17', 'r-04', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 40, 7, 'Search og kandidatkontakt', 'Kandidatkontakt & dialog'],
+      ['t-18', 'r-04', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 20, 5, 'Interviews, 2. runde', 'Interview med kandidat'],
+      ['t-19', 'r-04', 'u-efa', 'Rekrutteringspartner', 'Afslutningsfase', 5, 2.5, 'Referencetjek', 'Referencetagning'],
 
-      ['t-20', 'r-05', 'u-lbs', 'Rekrutteringskonsulent', 'Opstartsfase', 48, 2, 'Kravspecifikation med kunden'],
-      ['t-21', 'r-05', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 38, 4.5, 'Longlist-research'],
+      ['t-20', 'r-05', 'u-lbs', 'Rekrutteringskonsulent', 'Opstartsfase', 48, 2, 'Kravspecifikation med kunden', 'Behovsafdækning & jobprofil'],
+      ['t-21', 'r-05', 'u-lbs', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 38, 4.5, 'Longlist-research', 'Search & research'],
 
-      ['t-22', 'r-06', 'u-hrn', 'Rekrutteringspartner', 'Opstartsfase', 43, 4, 'Opstartsmøde og jobprofil'],
-      ['t-23', 'r-06', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 30, 8, 'Executive search, longlist'],
-      ['t-24', 'r-06', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 15, 6, 'Interviews med shortlist'],
-      ['t-25', 'r-06', 'u-hrn', 'Rekrutteringspartner', 'Rekrutteringsfase', 8, 3, 'Kandidatpræsentation forberedt'],
-      ['t-26', 'r-06', 'u-mkj', 'Marketing', 'Rekrutteringsfase', 12, 1, 'Employer branding-materiale'],
+      ['t-22', 'r-06', 'u-hrn', 'Rekrutteringspartner', 'Opstartsfase', 43, 4, 'Opstartsmøde og jobprofil', 'Opstartsmøde med kunde'],
+      ['t-23', 'r-06', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 30, 8, 'Executive search, longlist', 'Search & research'],
+      ['t-24', 'r-06', 'u-bdl', 'Rekrutteringskonsulent', 'Rekrutteringsfase', 15, 6, 'Interviews med shortlist', 'Interview med kandidat'],
+      ['t-25', 'r-06', 'u-hrn', 'Rekrutteringspartner', 'Rekrutteringsfase', 8, 3, 'Kandidatpræsentation forberedt', 'Kandidatpræsentation for kunde'],
+      ['t-26', 'r-06', 'u-mkj', 'Marketing', 'Rekrutteringsfase', 12, 1, 'Employer branding-materiale', 'Annoncetekst & jobopslag'],
 
-      ['t-27', 'r-07', 'u-lbs', 'Rekrutteringskonsulent', 'Opstartsfase', 28, 2.5, 'Markedskortlægning'],
-      ['t-28', 'r-07', 'u-hrn', 'Rekrutteringspartner', 'Rekrutteringsfase', 22, 1.5, 'Statusmøde med kunden'],
+      ['t-27', 'r-07', 'u-lbs', 'Rekrutteringskonsulent', 'Opstartsfase', 28, 2.5, 'Markedskortlægning', 'Markedskortlægning'],
+      ['t-28', 'r-07', 'u-hrn', 'Rekrutteringspartner', 'Rekrutteringsfase', 22, 1.5, 'Statusmøde med kunden', 'Statusmøde med kunde'],
 
-      ['t-29', 'r-08', 'u-efa', 'Rekrutteringspartner', 'Opstartsfase', 6, 2, 'Opstartsmøde'],
-      ['t-30', 'r-08', 'u-bdl', 'Rekrutteringskonsulent', 'Opstartsfase', 2, 3.5, 'Indledende search']
+      ['t-29', 'r-08', 'u-efa', 'Rekrutteringspartner', 'Opstartsfase', 6, 2, 'Opstartsmøde', 'Opstartsmøde med kunde'],
+      ['t-30', 'r-08', 'u-bdl', 'Rekrutteringskonsulent', 'Opstartsfase', 2, 3.5, 'Indledende search', 'Search & research']
     ];
 
     var time_entries = tDefs.map(function (d) {
@@ -132,6 +132,7 @@ window.Seed = (function () {
         dato: daysAgoISO(d[5]),
         timer: d[6],
         beskrivelse: d[7],
+        kategori: d[8] || '',
         created_at: ts(d[5]),
         updated_at: ts(d[5])
       };
